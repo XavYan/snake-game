@@ -10,7 +10,7 @@
 #include <vector>
 #include <unistd.h>
 
-#define TABLE_DIMENSION 6
+#define TABLE_DIMENSION 17
 
 class Game {
 private:

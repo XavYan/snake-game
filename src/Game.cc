@@ -20,7 +20,7 @@ void Game::start () {
   create_apple ();
 
   while (!game_failed()) {
-    usleep(500000);
+    usleep(300000);
 
     int last_x = snake_.x();
     int last_y = snake_.y();
