@@ -1,14 +1,23 @@
 #include <Game.h>
 
-Game::Game (int x, int y) : table_(TABLE_DIMENSION, TABLE_DIMENSION) {
+Game::Game (int x, int y, Controller* controller) : table_(TABLE_DIMENSION, TABLE_DIMENSION) {
   snake_.set_position(x, y);
+
+  srand(time(NULL));
+
+  if (!controller) {
+    controller_ = new KeyboardController();
+  } else {
+    controller_ = controller;
+  }
 }
 
 void Game::start () {
-  table_(1, 2).set_state(POINT_STATE);
-  table_(1, 4).set_state(POINT_STATE);
 
   write(true);
+
+  // Creating the first apple
+  create_apple ();
 
   while (!game_failed()) {
     usleep(500000);
@@ -16,21 +25,8 @@ void Game::start () {
     int last_x = snake_.x();
     int last_y = snake_.y();
 
-    if (snake_.x() == table_.cols() - 1) {
-      snake_.set_view(DOWN);
-    }
-
-    if (snake_.y() == table_.rows() - 1) {
-      snake_.set_view(LEFT);
-    }
-
-    if (snake_.x() == 0) {
-      snake_.set_view(UP);
-    }
-
-    if (snake_.y() == 0) {
-      snake_.set_view(RIGHT);
-    }
+    // here we set the view
+    snake_.set_view(controller_->get_snake_view());
 
     snake_.advance();
 
@@ -43,6 +39,7 @@ void Game::start () {
 
     if (state == POINT_STATE) {
       cell_to_tail(last_x, last_y);
+      create_apple();
     }
 
     if (state == TAIL_STATE) {
@@ -87,4 +84,42 @@ void Game::write (bool clear, std::ostream& os) const {
     }
     os << '\n';
   }
+}
+
+void Game::create_apple () {
+  std::vector<std::pair<int,int>> tail_positions = get_tail_positions();
+  std::vector<std::pair<int,int>> available_positions;
+
+  for (int i = 0; i < table_.rows(); i++) {
+    for (int j = 0; j < table_.cols(); j++) {
+      if (!in_array(std::pair<int,int>(j, i), tail_positions) && !(j == snake_.x() && i == snake_.y())) {
+        available_positions.push_back(std::pair<int,int>(j, i));
+      }
+    }
+  }
+
+  int len = available_positions.size();
+  std::pair<int,int> chosen = available_positions[rand() % len];
+  table_(chosen.second, chosen.first).set_state(POINT_STATE);
+}
+
+std::vector<std::pair<int,int>> Game::get_tail_positions () const {
+  std::queue<std::pair<int,int>> aux = tail_;
+  std::vector<std::pair<int,int>> result(aux.size());
+  
+  for (int i = 0; !aux.empty(); i++) {
+    result[i] = aux.front();
+    aux.pop();
+  }
+
+  return result;
+}
+
+bool Game::in_array (std::pair<int,int> p, std::vector<std::pair<int,int>> arr) const {
+  for (std::pair<int,int> value : arr) {
+    if (p.first == value.first && p.second == value.second) {
+      return true;
+    }
+  }
+  return false;
 }
